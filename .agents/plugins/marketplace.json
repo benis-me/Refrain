@@ -1,0 +1,20 @@
+{
+  "name": "refrain-marketplace",
+  "interface": {
+    "displayName": "Refrain"
+  },
+  "plugins": [
+    {
+      "name": "refrain",
+      "source": {
+        "source": "local",
+        "path": "./plugins/refrain"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

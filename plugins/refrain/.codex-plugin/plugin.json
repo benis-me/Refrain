@@ -1,0 +1,37 @@
+{
+  "name": "refrain",
+  "version": "0.1.0",
+  "description": "Restrained local-first product style, agent runtime contracts, and review skills.",
+  "author": {
+    "name": "Ben",
+    "url": "https://github.com/benis-me"
+  },
+  "homepage": "https://github.com/benis-me/Refrain",
+  "repository": "https://github.com/benis-me/Refrain",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "local-first",
+    "product-design",
+    "quality"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Refrain",
+    "shortDescription": "Restrained product style and local-first agent runtime defaults.",
+    "longDescription": "Refrain packages reusable Agent Skills for building quiet, local-first product tools with auditable Agent CLI runtime behavior, deterministic quality gates, and strict verification habits.",
+    "developerName": "Ben",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/benis-me/Refrain",
+    "defaultPrompt": [
+      "Apply Refrain style to this product shell.",
+      "Review this app against Refrain's quality bar.",
+      "Shape this local-first agent runtime."
+    ],
+    "brandColor": "#111827"
+  }
+}

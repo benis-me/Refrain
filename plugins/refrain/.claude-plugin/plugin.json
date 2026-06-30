@@ -1,0 +1,18 @@
+{
+  "name": "refrain",
+  "displayName": "Refrain",
+  "version": "0.1.0",
+  "description": "Restrained local-first product style, agent runtime contracts, and review skills.",
+  "author": {
+    "name": "Ben"
+  },
+  "repository": "https://github.com/benis-me/Refrain",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "local-first",
+    "product-design",
+    "quality"
+  ],
+  "skills": "./skills/"
+}
