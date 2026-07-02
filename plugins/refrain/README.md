@@ -1,7 +1,6 @@
 # Refrain Plugin
 
-This plugin packages Refrain's Agent Skills for installation through compatible
-agent runtimes.
+Agent Skills packaging a restrained local-first product style.
 
 ## Install
 
@@ -14,24 +13,22 @@ From GitHub:
 
 ## Contents
 
-- `skills/refrain-interface-design`
-- `skills/refrain-product-style`
-- `skills/refrain-engineering-kernel`
-- `skills/refrain-agent-runtime`
-- `skills/refrain-product-review`
-- `references/`
-- `blueprints/new-project.md`
+- `skills/refrain-design` - structure, interface grammar, and the default
+  identity (`identity/tokens.css`, `identity/DESIGN.md`).
+- `skills/refrain-engineering` - engineering defaults
+  (`reference/principles.md`).
+- `skills/refrain-agent-runtime` - runtime contract, per-CLI cookbook, and
+  a runnable fake-runner example.
+- `skills/refrain-review` - review rubric and the anti-slop linter
+  (`scripts/anti-slop-lint.mjs`).
+- `commands/new-project.md` - the `/refrain:new-project` start command.
 
 This plugin is the canonical content source. The repository root only holds
 marketplace metadata, validation, and contributor instructions.
 
 ## New Projects
 
-Do not copy a starter app from this plugin. Invoke the installed skills and let
-the agent choose the smallest structure that fits the actual product:
-
-```txt
-Use Refrain to start this project. Apply product-style, interface-design,
-engineering-kernel, and product-review. Add agent-runtime only if this project
-executes or selects external coding agents.
-```
+Do not copy a starter app; there is none. Run `/refrain:new-project <brief>`
+or invoke the skills directly and let the agent choose the smallest
+structure that fits, adopting the identity tokens in
+`skills/refrain-design/identity/tokens.css` as the default design system.

@@ -1,26 +1,26 @@
 # Refrain
 
 Refrain is an agent-facing distillation of a restrained local-first product
-style. It packages design taste, engineering boundaries, runtime contracts, and
-review standards into an installable plugin for future AI-led projects.
-
-Refrain is a product operating layer for agents. It helps future projects keep a
-quiet interface, clear architecture, auditable local runtime behavior, and
-evidence-backed verification without starting from a prebuilt app template.
+style: a concrete design identity, interface grammar, engineering defaults,
+agent runtime contracts, and a deterministic review gate, packaged as
+installable Agent Skills for future AI-led projects.
 
 ## What Is Included
 
-- `AGENTS.md` — repository instructions for agents working inside Refrain.
-- `LICENSE` — MIT license for the distributable plugin package.
-- `.claude-plugin/marketplace.json` — Claude Code marketplace entry for GitHub
-  installation.
-- `.agents/plugins/marketplace.json` — Codex-compatible marketplace entry for
-  local and shared plugin installation.
-- `plugins/refrain/` — the canonical installable plugin package:
-  - `skills/`
-  - `references/`
-  - `blueprints/new-project.md`
-- `scripts/validate-refrain.mjs` — structural validation for this repository.
+- `plugins/refrain/` - the canonical installable plugin:
+  - `skills/refrain-design` - product shells, interface grammar, and the
+    default identity (`identity/tokens.css` plus `identity/DESIGN.md`).
+  - `skills/refrain-engineering` - restrained local-first engineering
+    defaults (`reference/principles.md`).
+  - `skills/refrain-agent-runtime` - Agent CLI discovery and runtime
+    contracts, a per-CLI cookbook, and a runnable fake-runner example.
+  - `skills/refrain-review` - review rubric plus a zero-dependency
+    anti-slop linter (`scripts/anti-slop-lint.mjs`).
+  - `commands/new-project.md` - the `/refrain:new-project` start command.
+- `.claude-plugin/marketplace.json` - Claude Code marketplace entry.
+- `.agents/plugins/marketplace.json` - Codex-compatible marketplace entry.
+- `scripts/` and `tests/` - structural validation, linter fixtures, and
+  drift tests for this repository.
 
 ## Install From GitHub
 
@@ -31,57 +31,50 @@ Claude Code users install Refrain as a plugin marketplace from GitHub:
 /plugin install refrain@refrain-marketplace
 ```
 
-Codex-compatible runtimes should load the same plugin package through
-`.agents/plugins/marketplace.json` or a compatible marketplace source.
+Codex-compatible runtimes load the same plugin package through
+`.agents/plugins/marketplace.json`.
 
 ## Start A New Project
 
-After installation, start new projects by naming the plugin skills, not by
-copying files:
-
 ```txt
-Use Refrain to start this project.
-
-Apply:
-- refrain-product-style
-- refrain-interface-design
-- refrain-engineering-kernel
-- refrain-product-review
-
-If this project executes or selects external coding agents, also apply
-refrain-agent-runtime.
-
-Start from my real first workflow, choose the smallest structure that fits, and
-ship one verified vertical slice.
+/refrain:new-project <brief>
 ```
 
-The plugin contains no starter app. Refrain is meant to shape agent judgment,
-not preload a project with unrelated files.
+Or without the command:
+
+```txt
+Use Refrain to start this project. Apply refrain-design,
+refrain-engineering, and refrain-review. Add refrain-agent-runtime only if
+this project executes or selects external coding agents. Start from my real
+first workflow, adopt the default identity tokens, and ship one verified
+vertical slice.
+```
+
+The plugin contains no starter app. Refrain shapes agent judgment and ships
+a small set of copyable artifacts (identity tokens, a design charter, a
+linter, a fake-runner example) instead of preloading a project with files.
 
 ## Skills
 
-- `refrain-product-style` — product shell and app-style defaults.
-- `refrain-interface-design` — visual direction, interface grammar, and design
-  review routing.
-- `refrain-engineering-kernel` — restrained local-first architecture.
-- `refrain-agent-runtime` — Agent CLI discovery and runtime contracts.
-- `refrain-product-review` — polish and anti-slop verification.
+- `refrain-design` - structure and visual design, with a concrete default
+  identity.
+- `refrain-engineering` - hermetic Node-first architecture defaults.
+- `refrain-agent-runtime` - Agent CLI discovery, execution, events, and
+  safety.
+- `refrain-review` - deterministic anti-slop gate plus judgment review.
 
 ## Commands
 
 ```sh
-npm test
-npm run verify
+npm test        # validator-backed tests, linter fixtures, drift tests
+npm run verify  # structural validator, tests, claude plugin validate
 ```
-
-`npm test` runs the root validation tests.
-`npm run verify` runs the structural validator first, then the full test suite.
 
 ## Position
 
 Refrain optimizes for products that are quiet, local-first, tool-like, and
-verified on the real surface. It rejects generic AI gloss: decorative gradients,
-invented metrics, shadow-heavy cards, oversized marketing heroes, vague copy,
-and UI that only works in the filled state.
+verified on the real surface. It rejects generic AI gloss: decorative
+gradients, invented metrics, shadow-heavy cards, oversized marketing heroes,
+vague copy, and UI that only works in the filled state.
 
-The default bar is simple: if a future agent cannot use it, it is not distilled.
+The bar is simple: if a future agent cannot use it, it is not distilled.

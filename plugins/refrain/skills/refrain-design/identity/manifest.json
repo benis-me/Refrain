@@ -1,0 +1,9 @@
+{
+  "name": "Refrain",
+  "category": "Tool & Minimal",
+  "summary": "Near-monochrome OKLCH neutrals, achromatic interactive accent, hairline borders over shadows, tracked mono labels, dark-first.",
+  "craft": {
+    "applies": ["typography", "color", "anti-ai-slop", "state-coverage"],
+    "suggested": ["animation-discipline", "accessibility-baseline"]
+  }
+}

@@ -1,12 +1,12 @@
 {
   "name": "refrain",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Agent-facing distillation of a restrained local-first product style.",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "verify": "node scripts/validate-refrain.mjs && npm test"
+    "verify": "node scripts/validate-refrain.mjs && npm test && node scripts/check-plugin-manifest.mjs"
   },
   "engines": {
     "node": ">=22.12"

@@ -3,56 +3,62 @@ import { test } from "node:test";
 
 import { validateWorkspace } from "../scripts/validate-refrain.mjs";
 
-test("workspace distillation is a lean installable plugin marketplace", async () => {
-  const result = await validateWorkspace(new URL("../", import.meta.url));
+const result = await validateWorkspace(new URL("../", import.meta.url));
 
+test("workspace is a lean installable plugin marketplace", () => {
   assert.equal(result.ok, true, result.errors.join("\n"));
-  assert.equal(result.summary.skills, 5);
+  assert.equal(result.summary.skills, 4);
+  assert.equal(result.summary.commands, 1);
   assert.equal(result.summary.plugin, true);
-  assert.equal(result.summary.blueprints, 1);
-  assert.equal(result.summary.references >= 7, true);
+  assert.equal(result.summary.rules > 10, true);
 });
 
-test("skill descriptions are trigger-oriented and do not summarize workflow shortcuts", async () => {
-  const result = await validateWorkspace(new URL("../", import.meta.url));
-
-  assert.deepEqual(result.errors.filter((error) => error.includes("description")), []);
-});
-
-test("root does not keep duplicated canonical skills or starter templates", async () => {
-  const result = await validateWorkspace(new URL("../", import.meta.url));
-
-  assert.deepEqual(result.errors.filter((error) => error.includes("duplicated root")), []);
-});
-
-test("README describes Refrain without referencing source projects", async () => {
-  const result = await validateWorkspace(new URL("../", import.meta.url));
-
-  assert.deepEqual(result.errors.filter((error) => error.includes("README")), []);
-});
-
-test("marketplace metadata is plugin-first and points at the GitHub package", async () => {
-  const result = await validateWorkspace(new URL("../", import.meta.url));
-
+test("skill descriptions are trigger-oriented and do not summarize workflow shortcuts", () => {
   assert.deepEqual(
-    result.errors.filter((error) => error.includes("manifest repository")),
-    []
-  );
-  assert.deepEqual(
-    result.errors.filter((error) => error.includes("brandColor")),
+    result.errors.filter((error) => error.includes("description")),
     []
   );
 });
 
-test("interface design skill preserves the distilled product-UI grammar", async () => {
-  const result = await validateWorkspace(new URL("../", import.meta.url));
-
+test("every path a skill references resolves inside that skill directory", () => {
   assert.deepEqual(
-    result.errors.filter((error) => error.includes("interface-design marker")),
+    result.errors.filter(
+      (error) =>
+        error.includes("unreachable") ||
+        error.includes("escapes the skill directory") ||
+        error.includes("references/")
+    ),
     []
   );
+});
+
+test("canonical rule corpus does not drift between linter, rubric, and design skill", () => {
   assert.deepEqual(
-    result.errors.filter((error) => error.includes("interface design route file")),
+    result.errors.filter((error) => error.includes("drift")),
+    []
+  );
+});
+
+test("plugin content stays portable and single-source", () => {
+  assert.deepEqual(
+    result.errors.filter(
+      (error) =>
+        error.includes("portability") ||
+        error.includes("em-dash") ||
+        error.includes("motion numbers")
+    ),
+    []
+  );
+});
+
+test("marketplace metadata is plugin-first and versions stay in sync", () => {
+  assert.deepEqual(
+    result.errors.filter(
+      (error) =>
+        error.includes("manifest") ||
+        error.includes("marketplace") ||
+        error.includes("version")
+    ),
     []
   );
 });

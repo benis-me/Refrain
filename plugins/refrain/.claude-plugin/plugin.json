@@ -1,7 +1,7 @@
 {
   "name": "refrain",
   "displayName": "Refrain",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Restrained local-first product style, agent runtime contracts, and review skills.",
   "author": {
     "name": "Ben"
@@ -14,5 +14,6 @@
     "product-design",
     "quality"
   ],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "commands": "./commands/"
 }

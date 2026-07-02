@@ -1,0 +1,158 @@
+/*
+ * Refrain default identity tokens.
+ * Copy this file into a new project and consume the variables from
+ * components. Semantic roles only in components; raw values live here.
+ * The charter that explains these values: identity/DESIGN.md.
+ */
+
+:root {
+  /* Near-monochrome base: graphite ink on paper. */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+
+  --surface: oklch(0.985 0 0);
+  --surface-2: oklch(0.968 0.001 90);
+  --foreground-2: oklch(0.43 0 0);
+
+  --border: oklch(0.922 0 0);
+  --border-strong: oklch(0.87 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+
+  /* Interactive accent: achromatic. Ink inverts on paper instead of a hue. */
+  --brand: oklch(0.205 0 0);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-soft: oklch(0.97 0 0);
+
+  /* The only hues: green for success and live data, red-orange for
+     destruction. */
+  --success: oklch(0.55 0.14 150);
+  --destructive: oklch(0.577 0.245 27.3);
+  --destructive-foreground: oklch(0.985 0 0);
+
+  --font-display: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono-stack: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono",
+    Menlo, monospace;
+  --font-brand: "Space Grotesk", "Geist", ui-sans-serif, system-ui, sans-serif;
+
+  /* Type ramp: tight, negative tracking at display sizes. */
+  --text-display: 3.5rem; /* line-height 1.02, letter-spacing -0.03em */
+  --text-title: 2rem; /* line-height 1.1, letter-spacing -0.02em */
+  --text-body: 0.875rem;
+  --text-label: 0.6875rem; /* .label-mono */
+
+  --radius: 0.75rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Elevation: borders separate the page plane; shadow only for true
+     overlays. */
+  --shadow-pop: 0 4px 14px oklch(0.145 0 0 / 0.07),
+    0 18px 48px oklch(0.145 0 0 / 0.11);
+  --shadow-card: 0 1px 1px oklch(0.145 0 0 / 0.025);
+
+  /* Motion: canonical spec in foundations/motion.md. --motion-stagger is the
+     child duration for staggered entrances (45ms between children). */
+  --motion-fast: 150ms;
+  --motion-enter: 180ms;
+  --motion-stagger: 320ms;
+  --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Dark is a designed theme, not an inversion. Key it off a class so the
+   product controls it explicitly. */
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.185 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.245 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.245 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+
+  --surface: oklch(0.185 0 0);
+  --surface-2: oklch(0.245 0 0);
+  --foreground-2: oklch(0.72 0 0);
+
+  --border: oklch(1 0 0 / 9%);
+  --border-strong: oklch(1 0 0 / 17%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.556 0 0);
+
+  --brand: oklch(0.985 0 0);
+  --brand-foreground: oklch(0.205 0 0);
+  --brand-soft: oklch(0.26 0 0);
+
+  --success: oklch(0.7 0.15 150);
+  --destructive: oklch(0.704 0.191 22.2);
+  --destructive-foreground: oklch(0.985 0 0);
+}
+
+/* Signature label treatment: monospace, uppercase, tracked, small. */
+.label-mono {
+  font-family: var(--font-mono-stack);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-size: var(--text-label);
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+/* Tabular numerics wherever values compare. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quiet diagonal-hatch canvas for previews and waiting surfaces. */
+.canvas-hatch {
+  background-color: var(--surface-2);
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in oklch, var(--foreground) 3.5%, transparent) 0 1px,
+    transparent 1px 9px
+  );
+}
+
+/* Entrance: fade plus a 4px rise. */
+@keyframes fade-in-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-in {
+  animation: fade-in-rise var(--motion-enter) var(--ease-out) both;
+}
+
+/* Reduced motion is a hard guard, not a suggestion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

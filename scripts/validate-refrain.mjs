@@ -1,6 +1,9 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const PLUGIN_ROOT = "plugins/refrain";
+const SKILLS_ROOT = `${PLUGIN_ROOT}/skills`;
 
 const REQUIRED_ROOT_FILES = [
   ".gitignore",
@@ -10,64 +13,101 @@ const REQUIRED_ROOT_FILES = [
   "package.json",
   ".claude-plugin/marketplace.json",
   ".agents/plugins/marketplace.json",
-  "plugins/refrain/.claude-plugin/plugin.json",
-  "plugins/refrain/.codex-plugin/plugin.json",
-  "plugins/refrain/README.md",
-  "plugins/refrain/blueprints/new-project.md",
+  `${PLUGIN_ROOT}/.claude-plugin/plugin.json`,
+  `${PLUGIN_ROOT}/.codex-plugin/plugin.json`,
+  `${PLUGIN_ROOT}/README.md`,
+  `${PLUGIN_ROOT}/commands/new-project.md`,
   "scripts/validate-refrain.mjs",
-  "tests/validate-refrain.test.mjs"
+  "scripts/check-plugin-manifest.mjs",
+  "tests/validate-refrain.test.mjs",
+  "tests/anti-slop-lint.test.mjs",
+  "tests/fixtures/bad.html",
+  "tests/fixtures/clean.html"
 ];
 
-const FORBIDDEN_ROOT_DIRS = [
+const FORBIDDEN_DIRS = [
   "docs",
   "skills",
-  "templates"
-];
-
-const FORBIDDEN_PLUGIN_DIRS = [
-  "plugins/refrain/templates"
-];
-
-const REQUIRED_REFERENCES = [
-  "agent-runtime-contract.md",
-  "distilled-charter.md",
-  "distribution.md",
-  "engineering-principles.md",
-  "interface-design.md",
-  "polish-rubric.md",
-  "product-shell-guidelines.md",
-  "quality-kernel.md",
-  "verification-standard.md"
+  "templates",
+  `${PLUGIN_ROOT}/references`,
+  `${PLUGIN_ROOT}/blueprints`,
+  `${PLUGIN_ROOT}/templates`
 ];
 
 const REQUIRED_SKILLS = [
-  "refrain-interface-design",
-  "refrain-product-style",
-  "refrain-engineering-kernel",
+  "refrain-design",
+  "refrain-engineering",
   "refrain-agent-runtime",
-  "refrain-product-review"
+  "refrain-review"
 ];
 
-const REQUIRED_INTERFACE_DESIGN_FILES = [
-  "foundations/tokens.md",
-  "foundations/typography.md",
-  "foundations/surface.md",
-  "foundations/motion.md",
-  "controls/selectors.md",
-  "controls/panes.md",
-  "controls/toolbars.md",
-  "controls/empty-error-states.md",
-  "surfaces/creation-home.md",
-  "surfaces/workspace.md",
-  "surfaces/design-system-gallery.md",
-  "surfaces/settings.md",
-  "prompts/interface-generation.md",
-  "prompts/design-review.md",
-  "cases/good-case.md",
-  "cases/bad-case.md"
-];
+const REQUIRED_SKILL_FILES = {
+  "refrain-design": [
+    "identity/DESIGN.md",
+    "identity/tokens.css",
+    "identity/manifest.json",
+    "foundations/tokens.md",
+    "foundations/typography.md",
+    "foundations/surface.md",
+    "foundations/motion.md",
+    "controls/selectors.md",
+    "controls/panes.md",
+    "controls/toolbars.md",
+    "controls/empty-error-states.md",
+    "surfaces/creation-home.md",
+    "surfaces/workspace.md",
+    "surfaces/design-system-gallery.md",
+    "surfaces/settings.md",
+    "prompts/interface-generation.md",
+    "prompts/design-review.md",
+    "cases/good-case.md",
+    "cases/bad-case.md"
+  ],
+  "refrain-engineering": ["reference/principles.md"],
+  "refrain-agent-runtime": [
+    "reference/contract.md",
+    "reference/cli-cookbook.md",
+    "scripts/fake-runner-example.mjs"
+  ],
+  "refrain-review": ["reference/rubric.md", "scripts/anti-slop-lint.mjs"]
+};
 
-const SOURCE_PROJECT_NAME_PATTERN = /\bD[e]zin\b/i;
+const REQUIRED_SKILL_MARKERS = {
+  "refrain-design": [
+    "identity/tokens.css",
+    "foundations/motion.md",
+    "surfaces/workspace.md",
+    "## Agent Output Contract",
+    "## Anti-Patterns",
+    "real surface"
+  ],
+  "refrain-engineering": [
+    "reference/principles.md",
+    "127.0.0.1",
+    "vertical slice"
+  ],
+  "refrain-agent-runtime": [
+    "reference/contract.md",
+    "reference/cli-cookbook.md",
+    "augmented PATH",
+    "stdin"
+  ],
+  "refrain-review": [
+    "reference/rubric.md",
+    "scripts/anti-slop-lint.mjs",
+    "Findings"
+  ]
+};
+
+/* Files (relative to the plugin root) allowed to state motion durations. */
+const MOTION_NUMBER_ALLOWLIST = new Set([
+  "skills/refrain-design/foundations/motion.md",
+  "skills/refrain-design/identity/tokens.css",
+  "skills/refrain-design/identity/DESIGN.md"
+]);
+
+const SOURCE_PROJECT_NAME_PATTERN = new RegExp("\\bD" + "ezin\\b", "i");
+const EM_DASH = "—";
 
 function resolveRoot(rootUrl) {
   return rootUrl instanceof URL ? fileURLToPath(rootUrl) : String(rootUrl);
@@ -114,10 +154,11 @@ function parseFrontmatter(source) {
   return fields;
 }
 
-async function countMarkdown(root, relativeDir) {
-  const dir = path.join(root, relativeDir);
+async function listFiles(dir) {
   const entries = await readdir(dir, { recursive: true, withFileTypes: true });
-  return entries.filter((entry) => entry.isFile() && entry.name.endsWith(".md")).length;
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.join(entry.parentPath ?? entry.path, entry.name));
 }
 
 async function validatePackage(root, errors) {
@@ -130,12 +171,12 @@ async function validatePackage(root, errors) {
     errors.push("package.json test script must only run root validation tests");
   }
 
-  if (packageJson.scripts?.verify !== "node scripts/validate-refrain.mjs && npm test") {
-    errors.push("package.json verify script must run validator before tests");
-  }
-
-  if ("sync:plugin" in (packageJson.scripts ?? {})) {
-    errors.push("package.json must not keep sync:plugin after plugin becomes canonical");
+  const expectedVerify =
+    "node scripts/validate-refrain.mjs && npm test && node scripts/check-plugin-manifest.mjs";
+  if (packageJson.scripts?.verify !== expectedVerify) {
+    errors.push(
+      "package.json verify script must run validator, tests, then the plugin manifest check"
+    );
   }
 }
 
@@ -153,10 +194,22 @@ async function validateReadme(root, errors) {
 }
 
 async function validateMarketplaces(root, errors) {
-  const claudeMarketplace = await readJson(path.join(root, ".claude-plugin/marketplace.json"), errors);
-  const codexMarketplace = await readJson(path.join(root, ".agents/plugins/marketplace.json"), errors);
-  const claudeManifest = await readJson(path.join(root, "plugins/refrain/.claude-plugin/plugin.json"), errors);
-  const codexManifest = await readJson(path.join(root, "plugins/refrain/.codex-plugin/plugin.json"), errors);
+  const claudeMarketplace = await readJson(
+    path.join(root, ".claude-plugin/marketplace.json"),
+    errors
+  );
+  const codexMarketplace = await readJson(
+    path.join(root, ".agents/plugins/marketplace.json"),
+    errors
+  );
+  const claudeManifest = await readJson(
+    path.join(root, `${PLUGIN_ROOT}/.claude-plugin/plugin.json`),
+    errors
+  );
+  const codexManifest = await readJson(
+    path.join(root, `${PLUGIN_ROOT}/.codex-plugin/plugin.json`),
+    errors
+  );
 
   if (claudeMarketplace?.name !== "refrain-marketplace") {
     errors.push("Claude marketplace name must be refrain-marketplace");
@@ -184,6 +237,9 @@ async function validateMarketplaces(root, errors) {
   if (claudeManifest?.skills !== "./skills/") {
     errors.push("Claude plugin manifest must expose ./skills/");
   }
+  if (claudeManifest?.commands !== "./commands/") {
+    errors.push("Claude plugin manifest must expose ./commands/");
+  }
   if (claudeManifest?.repository !== "https://github.com/benis-me/Refrain") {
     errors.push("Claude plugin manifest repository must target benis-me/Refrain");
   }
@@ -199,11 +255,26 @@ async function validateMarketplaces(root, errors) {
   if (codexManifest?.interface?.brandColor !== "#111827") {
     errors.push("Codex plugin interface brandColor must stay restrained");
   }
+
+  const claudeVersion = claudeManifest?.version;
+  const codexVersion = codexManifest?.version;
+  const marketplaceVersion = claudeMarketplace?.plugins?.[0]?.version;
+  if (!claudeVersion || claudeVersion !== codexVersion) {
+    errors.push(
+      `manifest versions must match: claude ${claudeVersion}, codex ${codexVersion}`
+    );
+  }
+  if (marketplaceVersion && marketplaceVersion !== claudeVersion) {
+    errors.push(
+      `marketplace version ${marketplaceVersion} must match manifest version ${claudeVersion}`
+    );
+  }
 }
 
 async function validateSkill(root, skillName, errors) {
-  const relative = path.join("plugins/refrain/skills", skillName, "SKILL.md");
-  const filePath = path.join(root, relative);
+  const skillDir = path.join(root, SKILLS_ROOT, skillName);
+  const relative = path.join(SKILLS_ROOT, skillName, "SKILL.md");
+  const filePath = path.join(skillDir, "SKILL.md");
 
   if (!(await isFile(filePath))) {
     errors.push(`Missing skill: ${relative}`);
@@ -245,80 +316,202 @@ async function validateSkill(root, skillName, errors) {
       errors.push(`${relative} missing ${section}`);
     }
   }
-}
 
-async function validateReferences(root, errors) {
-  for (const reference of REQUIRED_REFERENCES) {
-    const relative = path.join("plugins/refrain/references", reference);
-    if (!(await isFile(path.join(root, relative)))) {
-      errors.push(`Missing reference: ${relative}`);
+  for (const marker of REQUIRED_SKILL_MARKERS[skillName] ?? []) {
+    if (!source.includes(marker)) {
+      errors.push(`${relative} missing marker: ${marker}`);
+    }
+  }
+
+  for (const requiredFile of REQUIRED_SKILL_FILES[skillName] ?? []) {
+    if (!(await isFile(path.join(skillDir, requiredFile)))) {
+      errors.push(
+        `Missing skill file: ${path.join(SKILLS_ROOT, skillName, requiredFile)}`
+      );
     }
   }
 }
 
-async function validateInterfaceDesign(root, errors) {
-  const skillRelative = "plugins/refrain/skills/refrain-interface-design/SKILL.md";
-  const referenceRelative = "plugins/refrain/references/interface-design.md";
-  const skillPath = path.join(root, skillRelative);
-  const referencePath = path.join(root, referenceRelative);
-
-  if (!(await isFile(skillPath)) || !(await isFile(referencePath))) {
+/**
+ * Every path-like reference written in a skill's markdown must resolve
+ * inside that skill's directory, because installed skills only know their
+ * own directory. This is what keeps routed files reachable at runtime.
+ */
+async function validateSkillLinks(root, skillName, errors) {
+  const skillDir = path.join(root, SKILLS_ROOT, skillName);
+  if (!(await isDirectory(skillDir))) {
     return;
   }
 
-  const skillSource = await readFile(skillPath, "utf8");
-  const referenceSource = await readFile(referencePath, "utf8");
-  const requiredSkillMarkers = [
-    "foundations/tokens.md",
-    "controls/selectors.md",
-    "surfaces/workspace.md",
-    "prompts/interface-generation.md",
-    "cases/good-case.md",
-    "## Agent Output Contract",
-    "operational",
-    "design-system",
-    "real surface"
-  ];
-  const requiredReferenceMarkers = [
-    "## Screen Archetypes",
-    "## Verification On The Surface",
-    "Creation home",
-    "Selector popover",
-    "empty, loading/running"
-  ];
+  const markdownFiles = (await listFiles(skillDir)).filter((file) =>
+    file.endsWith(".md")
+  );
 
-  for (const marker of requiredSkillMarkers) {
-    if (!skillSource.includes(marker)) {
-      errors.push(`${skillRelative} missing interface-design marker: ${marker}`);
+  for (const file of markdownFiles) {
+    const source = await readFile(file, "utf8");
+    const candidates = new Set();
+
+    for (const match of source.matchAll(/`([^`\n]+)`/g)) {
+      candidates.add(match[1].trim());
+    }
+    for (const match of source.matchAll(/\]\(([^)#?\s]+)\)/g)) {
+      candidates.add(match[1].trim());
+    }
+
+    for (const candidate of candidates) {
+      if (!/^[\w./-]+\.(?:md|css|mjs|json)$/.test(candidate)) continue;
+      if (!candidate.includes("/")) continue;
+      if (candidate.startsWith("http") || candidate.startsWith("/")) continue;
+
+      const fileRelative = path.relative(root, file);
+      if (candidate.includes("..")) {
+        errors.push(
+          `${fileRelative} references ${candidate}, which escapes the skill directory`
+        );
+        continue;
+      }
+      if (candidate.startsWith("references/")) {
+        errors.push(
+          `${fileRelative} references removed plugin-root references/: ${candidate}`
+        );
+        continue;
+      }
+
+      const fromSkillRoot = path.join(skillDir, candidate);
+      const fromFileDir = path.join(path.dirname(file), candidate);
+      if (!(await isFile(fromSkillRoot)) && !(await isFile(fromFileDir))) {
+        errors.push(`${fileRelative} has unreachable reference: ${candidate}`);
+      }
+    }
+  }
+}
+
+async function validateCommand(root, errors) {
+  const commandPath = path.join(root, PLUGIN_ROOT, "commands/new-project.md");
+  if (!(await isFile(commandPath))) {
+    return;
+  }
+  const source = await readFile(commandPath, "utf8");
+  for (const match of source.matchAll(
+    /\$\{CLAUDE_PLUGIN_ROOT\}\/([^\s`")\]]+)/g
+  )) {
+    const target = path.join(root, PLUGIN_ROOT, match[1]);
+    if (!(await isFile(target))) {
+      errors.push(
+        `commands/new-project.md has unreachable plugin reference: ${match[1]}`
+      );
+    }
+  }
+}
+
+/**
+ * Portability and single-source bans across all plugin prose and styles:
+ * no source-project names, no absolute user paths, no em-dashes, and no
+ * motion durations outside the motion spec and identity files.
+ */
+async function validateContentBans(root, errors) {
+  const pluginDir = path.join(root, PLUGIN_ROOT);
+  const files = (await listFiles(pluginDir)).filter(
+    (file) => file.endsWith(".md") || file.endsWith(".css")
+  );
+
+  for (const file of files) {
+    const relative = path.relative(pluginDir, file);
+    const source = await readFile(file, "utf8");
+
+    if (SOURCE_PROJECT_NAME_PATTERN.test(source)) {
+      errors.push(`portability: ${relative} references a source project by name`);
+    }
+    if (source.includes("/Users/")) {
+      errors.push(`portability: ${relative} contains an absolute user path`);
+    }
+    if (source.includes(EM_DASH)) {
+      errors.push(`em-dash: ${relative} contains U+2014; use commas or colons`);
+    }
+    if (source.includes("150-180ms")) {
+      errors.push(
+        `motion numbers: ${relative} uses the retired 150-180ms range; point at foundations/motion.md`
+      );
+    }
+    if (/\d+ms\b/.test(source) && !MOTION_NUMBER_ALLOWLIST.has(relative)) {
+      errors.push(
+        `motion numbers: ${relative} states durations; only the motion spec and identity files may`
+      );
+    }
+  }
+}
+
+/**
+ * Drift checks: the linter's RULES table is the single source of truth for
+ * machine-checkable blockers. The rubric tabulates it and the design skill
+ * names every blocker id.
+ */
+async function validateDrift(root, errors) {
+  const linterPath = path.join(
+    root,
+    SKILLS_ROOT,
+    "refrain-review/scripts/anti-slop-lint.mjs"
+  );
+  if (!(await isFile(linterPath))) {
+    errors.push("drift: anti-slop linter is missing");
+    return;
+  }
+
+  let RULES;
+  try {
+    ({ RULES } = await import(pathToFileURL(linterPath).href));
+  } catch (error) {
+    errors.push(`drift: anti-slop linter failed to import: ${error.message}`);
+    return;
+  }
+
+  const ids = RULES.map((rule) => rule.id);
+  if (new Set(ids).size !== ids.length) {
+    errors.push("drift: linter rule ids are not unique");
+  }
+
+  const rubric = await readFile(
+    path.join(root, SKILLS_ROOT, "refrain-review/reference/rubric.md"),
+    "utf8"
+  );
+  const designSkill = await readFile(
+    path.join(root, SKILLS_ROOT, "refrain-design/SKILL.md"),
+    "utf8"
+  );
+
+  for (const rule of RULES) {
+    if (!rubric.includes(rule.id)) {
+      errors.push(`drift: rubric.md does not list linter rule ${rule.id}`);
+    }
+    if (rule.severity === "blocker" && !designSkill.includes(rule.id)) {
+      errors.push(
+        `drift: refrain-design SKILL.md does not name blocker ${rule.id}`
+      );
     }
   }
 
-  for (const marker of requiredReferenceMarkers) {
-    if (!referenceSource.includes(marker)) {
-      errors.push(`${referenceRelative} missing interface-design marker: ${marker}`);
-    }
-  }
-
-  for (const relativeFile of REQUIRED_INTERFACE_DESIGN_FILES) {
-    const relative = path.join("plugins/refrain/skills/refrain-interface-design", relativeFile);
-    if (!(await isFile(path.join(root, relative)))) {
-      errors.push(`Missing interface design route file: ${relative}`);
+  const idSet = new Set(ids);
+  for (const match of rubric.matchAll(/^\|\s*([a-z][a-z0-9-]*)\s*\|/gm)) {
+    if (!idSet.has(match[1])) {
+      errors.push(`drift: rubric.md lists unknown rule id ${match[1]}`);
     }
   }
 }
 
 async function validateLeanShape(root, errors) {
-  for (const dir of FORBIDDEN_ROOT_DIRS) {
+  for (const dir of FORBIDDEN_DIRS) {
     if (await isDirectory(path.join(root, dir))) {
-      errors.push(`duplicated root ${dir}/ must not exist`);
+      errors.push(`${dir}/ must not exist`);
     }
   }
+}
 
-  for (const dir of FORBIDDEN_PLUGIN_DIRS) {
-    if (await isDirectory(path.join(root, dir))) {
-      errors.push(`${dir}/ must not exist; use blueprints instead`);
-    }
+async function countMarkdown(root, relativeDir) {
+  const dir = path.join(root, relativeDir);
+  if (!(await isDirectory(dir))) {
+    return 0;
   }
+  return (await listFiles(dir)).filter((file) => file.endsWith(".md")).length;
 }
 
 export async function validateWorkspace(rootUrl) {
@@ -334,12 +527,26 @@ export async function validateWorkspace(rootUrl) {
   await validatePackage(root, errors);
   await validateReadme(root, errors);
   await validateMarketplaces(root, errors);
-  await validateReferences(root, errors);
   await validateLeanShape(root, errors);
-  await validateInterfaceDesign(root, errors);
+  await validateCommand(root, errors);
+  await validateContentBans(root, errors);
+  await validateDrift(root, errors);
 
   for (const skillName of REQUIRED_SKILLS) {
     await validateSkill(root, skillName, errors);
+    await validateSkillLinks(root, skillName, errors);
+  }
+
+  let ruleCount = 0;
+  try {
+    const { RULES } = await import(
+      pathToFileURL(
+        path.join(root, SKILLS_ROOT, "refrain-review/scripts/anti-slop-lint.mjs")
+      ).href
+    );
+    ruleCount = RULES.length;
+  } catch {
+    // already reported by validateDrift
   }
 
   return {
@@ -347,8 +554,8 @@ export async function validateWorkspace(rootUrl) {
     errors,
     summary: {
       skills: REQUIRED_SKILLS.length,
-      references: await countMarkdown(root, "plugins/refrain/references"),
-      blueprints: await countMarkdown(root, "plugins/refrain/blueprints"),
+      commands: await countMarkdown(root, `${PLUGIN_ROOT}/commands`),
+      rules: ruleCount,
       plugin: true
     }
   };
